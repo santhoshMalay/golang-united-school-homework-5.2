@@ -1,37 +1,48 @@
 package cache
 
-import "time"
+import (
+	"time"
+)
 
-type Cache struct {
-	Key, Value string
-	KVPair     map[string]string
+type elements struct {
+	value   string
+	expires time.Time
 }
 
-func NewCache(k string, v string) Cache {
-	kvp := make(map[string]string)
-	return Cache{Key: k, Value: v, KVPair: kvp}
+type Cache struct {
+	mapCache map[string]elements
+}
+
+func NewCache() Cache {
+	return Cache{mapCache: make(map[string]elements)}
 }
 
 func (obj Cache) Get(key string) (string, bool) {
-	val, ok := obj.KVPair[key]
-	if ok == true {
-		return val, true
-	} else {
+	element, ok := obj.mapCache[key]
+	if !ok {
 		return "", false
 	}
+	return element.value, true
 }
 
 func (obj Cache) Put(key, value string) {
-	obj.KVPair[key] = value
+	obj.mapCache[key] = elements{
+		expires: time.Time{},
+		value:   value,
+	}
 }
 
 func (obj Cache) Keys() []string {
-	cacheKeys := make([]string, len(obj.KVPair))
-	for k := range obj.KVPair {
-		cacheKeys = append(cacheKeys, k)
+	var keys []string
+	for key := range obj.mapCache {
+		keys = append(keys, key)
 	}
-	return cacheKeys
+	return keys
 }
 
-func (obj Cache) PutTill(key, value string, deadline time.Time) {
+func (c Cache) PutTill(key, value string, deadline time.Time) {
+	c.mapCache[key] = elements{
+		expires: deadline,
+		value:   value,
+	}
 }
